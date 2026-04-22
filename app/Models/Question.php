@@ -17,7 +17,7 @@ class Question extends Model
         'correct_answer',
         'mark',
     ];
-
+    // protected $hidden = ['correct_answer']; //comment_test - remove
     public function exam()
     {
         return $this->belongsTo(Exam::class);
