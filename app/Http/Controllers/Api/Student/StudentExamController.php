@@ -8,65 +8,56 @@ use App\Models\Exam;
 use App\Models\ExamAttendance;
 use App\Models\ExamStudentResult;
 use App\Models\Answer;
-use Carbon\Carbon;
 
 class StudentExamController extends Controller
 {
     /*
     |----------------------------
-    | 1. LIST AVAILABLE EXAMS
+    | 1. LIST (exam/test/homework)
     |----------------------------
     */
     public function index(Request $request)
     {
         $student = $request->student;
-        // return $request->type ; 
-        $exams = Exam::where('class_id', $student->division->class_id)
-            ->where('type', $request->type)
+        $type = $request->type;
+
+        $items = Exam::where('class_id', $student->division->class_id)
+            ->where('type', $type)
             ->where(function ($q) use ($student) {
                 $q->whereNull('division_id')
-                    ->orWhere('division_id', $student->division_id);
+                  ->orWhere('division_id', $student->division_id);
             })
             ->orderBy('start_time')
             ->get();
 
-        return response()->json($exams);
+        return response()->json($items);
     }
 
     /*
     |----------------------------
-    | 2. VIEW EXAM (WITH QUESTIONS)
+    | 2. VIEW
     |----------------------------
     */
     public function show(Request $request, $id)
     {
         $student = $request->student;
 
-        $exam = Exam::with('questions')
-            ->findOrFail($id);
+        $exam = Exam::with('questions')->findOrFail($id);
 
-        // 🔴 Check belongs to student
-        if (
-            $exam->class_id !== $student->division->class_id ||
-            ($exam->division_id && $exam->division_id !== $student->division_id)
-        ) {
-            return response()->json(['message' => 'Unauthorized exam'], 403);
+        // belongs check
+        if (!$this->belongsToStudent($exam, $student)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // 🔴 Check start time
-        if (now()->lt($exam->start_time)) {
+        // time check (view)
+        if (!$this->canView($exam)) {
             return response()->json([
-                'message' => $exam->type . ' not started yet'
+                'message' => $exam->type . ' not available yet'
             ], 403);
         }
 
-        // 🔴 Check attendance
-        $attendance = ExamAttendance::where([
-            'exam_id' => $exam->id,
-            'student_id' => $student->id
-        ])->first();
-
-        if ((!$attendance || $attendance->status !== 'present' ) && $exam->type == 'exam') {
+        // attendance (only for exam)
+        if ($exam->type === 'exam' && !$this->isPresent($exam, $student)) {
             return response()->json([
                 'message' => 'You are absent for this exam'
             ], 403);
@@ -77,7 +68,7 @@ class StudentExamController extends Controller
 
     /*
     |----------------------------
-    | 3. SUBMIT EXAM
+    | 3. SUBMIT
     |----------------------------
     */
     public function submit(Request $request, $id)
@@ -86,47 +77,27 @@ class StudentExamController extends Controller
 
         $exam = Exam::with('questions')->findOrFail($id);
 
-        /*
-        |----------------------------
-        | VALIDATIONS
-        |----------------------------
-        */
-
         // belongs check
-        if (
-            $exam->class_id !== $student->division->class_id ||
-            ($exam->division_id && $exam->division_id !== $student->division_id)
-        ) {
+        if (!$this->belongsToStudent($exam, $student)) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // time check
-        if (now()->lt($exam->start_time) || now()->gt($exam->end_time)) {
+        // submit time check
+        if (!$this->canSubmit($exam)) {
             return response()->json([
-                'message' => 'Exam is not active'
+                'message' => ucfirst($exam->type) . ' is not active'
             ], 403);
         }
 
-        // attendance check
-        $attendance = ExamAttendance::where([
-            'exam_id' => $exam->id,
-            'student_id' => $student->id
-        ])->first();
-
-        if ((!$attendance || $attendance->status !== 'present' ) && $exam->type == 'exam') {
+        // attendance (only exam)
+        if ($exam->type === 'exam' && !$this->isPresent($exam, $student)) {
             return response()->json([
                 'message' => 'You are not allowed to take this exam'
             ], 403);
         }
 
-        // prevent duplicate submission
-        $existing = ExamStudentResult::where([
-            'exam_id' => $exam->id,
-            'student_id' => $student->id
-        ])->first();
-
-        if ($existing) {
-            // ExamStudentResult::where('exam_id', $exam->id)->delete(); //comment_test - add
+        // prevent duplicate
+        if ($this->alreadySubmitted($exam, $student)) {
             return response()->json([
                 'message' => 'Already submitted'
             ], 400);
@@ -134,12 +105,11 @@ class StudentExamController extends Controller
 
         /*
         |----------------------------
-        | PROCESS ANSWERS
+        | PROCESS
         |----------------------------
         */
 
-        $answersInput = $request->answers; // array
-
+        $answersInput = $request->answers;
         $totalMark = 0;
 
         $result = ExamStudentResult::create([
@@ -151,7 +121,7 @@ class StudentExamController extends Controller
 
         foreach ($exam->questions as $question) {
 
-            $selected = $answersInput[$question->id] ?? "-";
+            $selected = $answersInput[$question->id] ?? '-';
 
             $isCorrect = $selected === $question->correct_answer;
 
@@ -172,9 +142,57 @@ class StudentExamController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Exam submitted successfully',
+            'message' => ucfirst($exam->type) . ' submitted successfully',
             'student_mark' => $totalMark,
             'exam_mark' => $exam->total_marks
         ]);
+    }
+
+    /*
+    |====================================================
+    | 🔥 HELPER METHODS (CLEAN ARCHITECTURE)
+    |====================================================
+    */
+
+    private function belongsToStudent($exam, $student)
+    {
+        return $exam->class_id === $student->division->class_id &&
+            (!$exam->division_id || $exam->division_id === $student->division_id);
+    }
+
+    private function canView($exam)
+    {
+        if ($exam->type === 'homework') {
+            return now()->lte($exam->end_time);
+        }
+
+        return now()->gte($exam->start_time);
+    }
+
+    private function canSubmit($exam)
+    {
+        if ($exam->type === 'homework') {
+            return now()->lte($exam->end_time);
+        }
+
+        return now()->between($exam->start_time, $exam->end_time);
+    }
+
+    private function isPresent($exam, $student)
+    {
+        $attendance = ExamAttendance::where([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id
+        ])->first();
+
+        return $attendance && $attendance->status === 'present';
+    }
+
+    private function alreadySubmitted($exam, $student)
+    {
+        return ExamStudentResult::where([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id
+        ])->exists();
     }
 }
