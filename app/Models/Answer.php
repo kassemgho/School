@@ -15,7 +15,7 @@ class Answer extends Model
 
     public function result()
     {
-        return $this->belongsTo(ExamStudentResult::class);
+        return $this->belongsTo(ExamStudentResult::class, 'exam_student_result_id');
     }
 
     public function question()

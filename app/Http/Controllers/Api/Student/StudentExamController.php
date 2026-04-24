@@ -25,7 +25,7 @@ class StudentExamController extends Controller
             ->where('type', $type)
             ->where(function ($q) use ($student) {
                 $q->whereNull('division_id')
-                  ->orWhere('division_id', $student->division_id);
+                    ->orWhere('division_id', $student->division_id);
             })
             ->orderBy('start_time')
             ->get();
@@ -42,8 +42,8 @@ class StudentExamController extends Controller
     {
         $student = $request->student;
 
-        $exam = Exam::with('questions')->findOrFail($id);
 
+        $exam = Exam::with('questions')->findOrFail($id);
         // belongs check
         if (!$this->belongsToStudent($exam, $student)) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -57,7 +57,7 @@ class StudentExamController extends Controller
         }
 
         // attendance (only for exam)
-        if ($exam->type === 'exam' && !$this->isPresent($exam, $student)) {
+        if (($exam->type === 'exam' && !$this->isPresent($exam, $student)) && !$this->canView($exam)) {
             return response()->json([
                 'message' => 'You are absent for this exam'
             ], 403);
@@ -98,6 +98,10 @@ class StudentExamController extends Controller
 
         // prevent duplicate
         if ($this->alreadySubmitted($exam, $student)) {
+            // ExamStudentResult::where([
+            //     'exam_id' => $exam->id,
+            //     'student_id' => $student->id
+            // ])->delete(); //comment_test - remove 
             return response()->json([
                 'message' => 'Already submitted'
             ], 400);

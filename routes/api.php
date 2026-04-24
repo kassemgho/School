@@ -1,10 +1,14 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Student\StudentAttendanceController;
+use App\Http\Controllers\Api\Student\StudentBookController;
 use App\Http\Controllers\Api\Student\StudentDashboardController;
 use App\Http\Controllers\Api\Student\StudentExamController;
+use App\Http\Controllers\Api\Student\StudentPostController;
 use App\Http\Controllers\Api\Student\StudentResultController;
 use App\Http\Controllers\Api\Student\StudentScheduleController;
+use App\Http\Controllers\Api\Student\StudentTeacherController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -53,10 +57,28 @@ Route::prefix('/student')->middleware(['auth:sanctum', 'student'])->group(functi
     Route::post('/exams/{id}', [StudentExamController::class, 'show']);
     Route::post('/exams/{id}/submit', [StudentExamController::class, 'submit']);
 
-    Route::get('/student/results', [StudentResultController::class, 'index']);
-    Route::get('/student/results/{id}', [StudentResultController::class, 'show']);
-    Route::get('/student/results-analysis', [StudentResultController::class, 'analysis']);
+    //result
+    Route::get('/results', [StudentResultController::class, 'index']);
+    Route::get('/results/{id}', [StudentResultController::class, 'show']);
+    Route::get('/results-analysis', [StudentResultController::class, 'analysis']);
+    Route::get('/results-subject-analysis', [StudentResultController::class, 'subjectAnalysis']);
 
+    //teachers
+    Route::get('/teachers', [StudentTeacherController::class, 'index']);
+    Route::get('/teachers/{id}', [StudentTeacherController::class, 'show']);
+
+    //posts
+    Route::get('/posts', [StudentPostController::class, 'index']);
+    Route::get('/posts/{id}', [StudentPostController::class, 'show']);
+
+    //books
+    Route::get('/books', [StudentBookController::class, 'index']);
+    Route::get('/books/{id}/download', [StudentBookController::class, 'download']);
+    
+    //attendance
+    Route::get('/attendance', [StudentAttendanceController::class, 'index']);
+
+    //test
     Route::get('/test', function (\Illuminate\Http\Request $request) {
         return response()->json([
             'student_id' => $request->student->id,

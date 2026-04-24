@@ -39,8 +39,8 @@ class StudentResultController extends Controller
             'exam',
             'answers.question'
         ])
-        ->where('student_id', $student->id)
-        ->findOrFail($id);
+            ->where('student_id', $student->id)
+            ->findOrFail($id);
 
         return response()->json($result);
     }
@@ -59,6 +59,7 @@ class StudentResultController extends Controller
                 $q->where('student_id', $student->id);
             })
             ->get();
+
 
         /*
         |----------------------------
@@ -109,5 +110,79 @@ class StudentResultController extends Controller
             ],
             'classification_analysis' => $classificationStats
         ]);
+    }
+    public function subjectAnalysis(Request $request)
+    {
+        $student = $request->student;
+
+        $subjectId = $request->subject_id;
+
+        $answers = Answer::with([
+            'question.classification',
+            'question.exam.subject'
+        ])
+            ->whereHas('result', function ($q) use ($student) {
+                $q->where('student_id', $student->id);
+            })
+            ->when($subjectId, function ($query) use ($subjectId) {
+                $query->whereHas('question.exam', function ($q) use ($subjectId) {
+                    $q->where('subject_id', $subjectId);
+                });
+            })
+            ->get();
+        /*
+    |----------------------------
+    | GROUP BY SUBJECT
+    |----------------------------
+    */
+        $bySubject = $answers->groupBy(function ($answer) {
+            return optional($answer->question->exam->subject)->name ?? 'Unknown';
+        });
+
+        $result = [];
+
+        foreach ($bySubject as $subjectName => $group) {
+
+            $totalQ = $group->count();
+            $correctQ = $group->where('is_correct', true)->count();
+
+            /*
+        |----------------------------
+        | CLASSIFICATION INSIDE SUBJECT 🔥
+        |----------------------------
+        */
+            $byClassification = $group->groupBy(function ($answer) {
+                return optional($answer->question->classification)->name ?? 'Unknown';
+            });
+
+            $classificationStats = [];
+
+            foreach ($byClassification as $className => $classGroup) {
+
+                $cTotal = $classGroup->count();
+                $cCorrect = $classGroup->where('is_correct', true)->count();
+
+                $classificationStats[] = [
+                    'classification' => $className,
+                    'total' => $cTotal,
+                    'correct' => $cCorrect,
+                    'accuracy' => $cTotal > 0
+                        ? round(($cCorrect / $cTotal) * 100, 2)
+                        : 0
+                ];
+            }
+
+            $result[] = [
+                'subject' => $subjectName,
+                'total' => $totalQ,
+                'correct' => $correctQ,
+                'accuracy' => $totalQ > 0
+                    ? round(($correctQ / $totalQ) * 100, 2)
+                    : 0,
+                'classifications' => $classificationStats
+            ];
+        }
+
+        return response()->json($result);
     }
 }
