@@ -8,6 +8,7 @@ use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\SchoolClass;
 use App\Models\AcademicYear;
+use Database\Factories\ExamFactory;
 
 class ExamSeeder extends Seeder
 {
@@ -25,5 +26,6 @@ class ExamSeeder extends Seeder
             'start_time' => now(),
             'end_time' => now()->addHour(),
         ]);
+        ExamFactory::count(10)->create();
     }
 }

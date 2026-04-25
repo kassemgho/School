@@ -8,7 +8,7 @@ use App\Models\Book;
 
 class StudentBookController extends Controller
 {
-    /*
+    /**
     |----------------------------
     | LIST / SEARCH BOOKS
     |----------------------------
@@ -41,7 +41,7 @@ class StudentBookController extends Controller
         ]);
     }
 
-    /*
+    /**
     |----------------------------
     | DOWNLOAD BOOK
     |----------------------------

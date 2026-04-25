@@ -11,10 +11,15 @@ class Attendance extends Model
         'date',
         'status',
         'type',
+        'division_id'
     ];
 
     public function student()
     {
         return $this->belongsTo(Student::class);
+    }
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
     }
 }

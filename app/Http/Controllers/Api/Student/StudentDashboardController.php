@@ -18,7 +18,7 @@ class StudentDashboardController extends Controller
         $student = $request->student;
         $today = strtolower(Carbon::now()->format('D')); // mon, tue...
 
-        /*
+        /**
         |----------------------------
         | 1. TODAY SCHEDULE
         |----------------------------
@@ -29,7 +29,7 @@ class StudentDashboardController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        /*
+        /**
         |----------------------------
         | 2. UPCOMING EXAMS
         |----------------------------
@@ -44,14 +44,14 @@ class StudentDashboardController extends Controller
             ->take(5)
             ->get();
 
-        /*
+        /**
         |----------------------------
         | 3. LATEST POSTS
         |----------------------------
         */
         $posts = Post::latest()->take(5)->get();
 
-        /*
+        /**
         |----------------------------
         | 4. ATTENDANCE STATS
         |----------------------------
@@ -66,7 +66,7 @@ class StudentDashboardController extends Controller
             ? round(($presentAttendance / $totalAttendance) * 100, 2)
             : 0;
 
-        /*
+        /**
         |----------------------------
         | 5. LAST EXAM RESULT
         |----------------------------
@@ -76,7 +76,7 @@ class StudentDashboardController extends Controller
             ->latest()
             ->first();
 
-        /*
+        /**
         |----------------------------
         | FINAL RESPONSE
         |----------------------------

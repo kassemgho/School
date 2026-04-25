@@ -17,6 +17,8 @@ return new class extends Migration
             $table->date('date');
             $table->enum('status', ['present', 'absent', 'late']);
             $table->enum('type', ['daily', 'exam']);
+            $table->foreignId('division_id')->constrained()->onDelete('cascade');
+            $table->unique(['student_id', 'date', 'type']);
             $table->timestamps();
         });
     }

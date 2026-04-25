@@ -1,6 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Mentor\MentorMarkController;
+use App\Http\Controllers\Api\Mentor\MentorResultController;
+use App\Http\Controllers\Api\Mentor\MentorScheduleController;
+use App\Http\Controllers\Api\Mentor\MentorStudentController;
+use App\Http\Controllers\Api\Mentor\MentorTeacherController;
+use App\Http\Controllers\Api\Mentor\PaymentController;
 use App\Http\Controllers\Api\Student\StudentAttendanceController;
 use App\Http\Controllers\Api\Student\StudentBookController;
 use App\Http\Controllers\Api\Student\StudentDashboardController;
@@ -74,7 +80,7 @@ Route::prefix('/student')->middleware(['auth:sanctum', 'student'])->group(functi
     //books
     Route::get('/books', [StudentBookController::class, 'index']);
     Route::get('/books/{id}/download', [StudentBookController::class, 'download']);
-    
+
     //attendance
     Route::get('/attendance', [StudentAttendanceController::class, 'index']);
 
@@ -88,6 +94,31 @@ Route::prefix('/student')->middleware(['auth:sanctum', 'student'])->group(functi
     });
 });
 
-Route::middleware(['auth:sanctum', 'role:mentor'])->group(function () {
+Route::prefix('/mentor')->middleware(['auth:sanctum', 'role:mentor'])->group(function () {
+    Route::get('/teachers', [MentorTeacherController::class, 'index']);
+    Route::get('/teachers/{id}', [MentorTeacherController::class, 'show']);
+
+
+    Route::get('/classes', [MentorStudentController::class, 'classes']);
+    Route::get('/classes/{classId}/divisions', [MentorStudentController::class, 'divisions']);
+    Route::get('/divisions/{divisionId}/students', [MentorStudentController::class, 'students']);
+
+    // Route::get('/divisions/{divisionId}/attendance', [MentorStudentController::class, 'attendance']); // and this 
+
+    //marks
+    Route::get('/divisions/{divisionId}/marks', [MentorMarkController::class, 'divisionMarks']);
+
+    Route::post('/attendance', [MentorStudentController::class, 'store']);   // create attendance 
+    Route::get('/attendance', [MentorStudentController::class, 'show']);     // load for edit   // this one 
+    Route::patch('/attendance/{id}', [MentorStudentController::class, 'update']); // update student
+
+    //schedule
+    Route::post('/schedules', [MentorScheduleController::class, 'store']);
+    Route::get('/divisions/{divisionId}/schedule', [MentorScheduleController::class, 'show']);
+
+    //payments
+    Route::post('/payments', [PaymentController::class, 'store']);
+    Route::get('/payments/student/{studentId}', [PaymentController::class, 'history']);
+    Route::get('/payments/{studentFeeId}', [PaymentController::class, 'show']);
     // here will be the mentor APIs
 });

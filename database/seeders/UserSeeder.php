@@ -16,6 +16,12 @@ class UserSeeder extends Seeder
             'password' => bcrypt('password'),
             'role' => 'manager',
         ]);
+        User::create([
+            'name' => 'Mentor',
+            'email' => 'mentor@school.com',
+            'password' => bcrypt('password'),
+            'role' => 'mentor',
+        ]);
 
         // Teachers
         User::factory(10)->create(['role' => 'teacher']);

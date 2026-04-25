@@ -24,6 +24,9 @@ class DatabaseSeeder extends Seeder
             BookSeeder::class,
             AttendanceSeeder::class,
             ExamAttendanceSeeder::class,
+            SubjectSeeder::class,
+            StudentFeeSeeder::class,
+            PaymentSeeder::class,
         ]);
     }
 }

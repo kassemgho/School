@@ -16,6 +16,7 @@ class AttendanceSeeder extends Seeder
                 'date' => now(),
                 'status' => 'present',
                 'type' => 'daily',
+                'division_id' => $student->division->id
             ]);
         }
     }

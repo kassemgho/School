@@ -2,17 +2,17 @@
 
 namespace Database\Seeders;
 
-use Database\Factories\SubjectFactory;
+use App\Models\StudentFee;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class SubjectSeeder extends Seeder
+class StudentFeeSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        SubjectFactory::count(10)->create();
+        StudentFee::factory()->count(20)->create();
     }
 }
